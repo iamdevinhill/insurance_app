@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Medical Cost Query</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --background-color: #f4f6f7;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 2rem auto;
+            background-color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .query-form {
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        input, select {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--secondary-color);
+            outline: none;
+        }
+
+        .submit-btn {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            grid-column: span 2;
+            margin-top: 1rem;
+        }
+
+        .submit-btn:hover {
+            background-color: #2980b9;
+        }
+
+        #stats {
+            background-color: #f9f9f9;
+            padding: 1rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .stat-item {
+            background-color: white;
+            border-radius: 4px;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #results {
+            padding: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        tr:hover {
+            background-color: #e6e6e6;
+        }
+
+        @media (max-width: 768px) {
+            .query-form {
+                grid-template-columns: 1fr;
+            }
+
+            .submit-btn {
+                grid-column: span 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Medical Cost Comparison</h1>
+        </div>
+        <form id="queryForm" class="query-form">
+            <div class="form-group">
+                <label>Min Age</label>
+                <input type="number" id="minAge" min="0">
+            </div>
+            <div class="form-group">
+                <label>Max Age</label>
+                <input type="number" id="maxAge" min="0">
+            </div>
+            <div class="form-group">
+                <label>Sex</label>
+                <select id="sex">
+                    <option value="">All</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Smoker</label>
+                <select id="smoker">
+                    <option value="">All</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Region</label>
+                <select id="region">
+                    <option value="">All</option>
+                    <option value="southwest">Southwest</option>
+                    <option value="southeast">Southeast</option>
+                    <option value="northwest">Northwest</option>
+                    <option value="northeast">Northeast</option>
+                </select>
+            </div>
+            <button type="submit" class="submit-btn">Query Data</button>
+        </form>
+
+        <div id="stats" class="stats"></div>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        document.getElementById('queryForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const params = new URLSearchParams({
+                min_age: document.getElementById('minAge').value || '',
+                max_age: document.getElementById('maxAge').value || '',
+                sex: document.getElementById('sex').value,
+                smoker: document.getElementById('smoker').value,
+                region: document.getElementById('region').value
+            });
+
+            try {
+                const response = await fetch(`http://localhost:8000/query?${params}`);
+                const data = await response.json();
+
+                // Update stats
+                document.getElementById('stats').innerHTML = `
+                    <div class="stat-item">
+                        <h3>Total Records</h3>
+                        <p>${data.total_records}</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3>Avg Charges</h3>
+                        <p>$${data.avg_charges.toFixed(2)}</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3>Min Charges</h3>
+                        <p>$${data.min_charges.toFixed(2)}</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3>Max Charges</h3>
+                        <p>$${data.max_charges.toFixed(2)}</p>
+                    </div>
+                `;
+
+                // Render results table
+                const resultsTable = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Age</th>
+                                <th>Sex</th>
+                                <th>BMI</th>
+                                <th>Smoker</th>
+                                <th>Region</th>
+                                <th>Charges</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.records.map(record => `
+                                <tr>
+                                    <td>${record.age}</td>
+                                    <td>${record.sex}</td>
+                                    <td>${record.bmi}</td>
+                                    <td>${record.smoker}</td>
+                                    <td>${record.region}</td>
+                                    <td>$${record.charges.toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                document.getElementById('results').innerHTML = resultsTable;
+
+            } catch (error) {
+                console.error('Query failed:', error);
+                document.getElementById('stats').innerHTML = `
+                    <div class="stat-item">
+                        <h3>Error</h3>
+                        <p>Failed to fetch data. Ensure API is running.</p>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
